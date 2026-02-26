@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTC Analyzer - Dashboard</title>
+    <script src="/static/alerts.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #f0883e;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .control-group label {
+            font-size: 0.85em;
+            color: #8b949e;
+            text-transform: uppercase;
+        }
+        
+        select, input {
+            background: #161b22;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 1em;
+            min-width: 150px;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+        
+        button {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            align-self: flex-end;
+        }
+        
+        button:hover {
+            background: #2ea043;
+        }
+        
+        button:disabled {
+            background: #30363d;
+            cursor: not-allowed;
+        }
+        
+        #waitEntryBtn {
+            background: #1f6feb;
+        }
+        
+        #waitEntryBtn:hover {
+            background: #388bfd;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 20px;
+            transition: transform 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-3px);
+            border-color: #58a6ff;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .card-title {
+            font-size: 0.8em;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .card-value {
+            font-size: 1.6em;
+            font-weight: bold;
+            color: #c9d1d9;
+        }
+        
+        .price { color: #f0883e; }
+        .buy { color: #3fb950; }
+        .sell { color: #f85149; }
+        .neutral { color: #d29922; }
+        .tp { color: #3fb950; }
+        .sl { color: #f85149; }
+        
+        .signal-card {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            background: #0d1117;
+        }
+        
+        .signal-buy { border-left: 4px solid #3fb950; }
+        .signal-sell { border-left: 4px solid #f85149; }
+        .signal-neutral { border-left: 4px solid #d29922; }
+        
+        .signal-icon {
+            font-size: 1.3em;
+            margin-right: 12px;
+        }
+        
+        .signal-info h3 {
+            margin-bottom: 3px;
+            font-size: 1em;
+        }
+        
+        .signal-info p {
+            color: #8b949e;
+            font-size: 0.85em;
+        }
+        
+        .recommendation {
+            text-align: center;
+            padding: 25px;
+            font-size: 2.2em;
+            font-weight: bold;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        
+        .rec-strong-buy { background: #3fb95020; color: #3fb950; border: 2px solid #3fb950; }
+        .rec-buy { background: #3fb95010; color: #3fb950; border: 2px solid #3fb950; }
+        .rec-hold { background: #d2992220; color: #d29922; border: 2px solid #d29922; }
+        .rec-sell { background: #f8514910; color: #f85149; border: 2px solid #f85149; }
+        .rec-strong-sell { background: #f8514920; color: #f85149; border: 2px solid #f85149; }
+        
+        .tp-sl-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .tp-sl-grid { grid-template-columns: 1fr; }
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.5em;
+        }
+        
+        .error {
+            text-align: center;
+            padding: 50px;
+            color: #f85149;
+            font-size: 1.2em;
+        }
+        
+        .timestamp {
+            text-align: center;
+            color: #8b949e;
+            margin-top: 15px;
+            font-size: 0.85em;
+        }
+        
+        .interval-badge {
+            display: inline-block;
+            background: #58a6ff;
+            color: #0d1117;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .timeframe-info {
+            text-align: center;
+            color: #8b949e;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+        
+        .position-size {
+            background: #1f6feb20;
+            border: 1px solid #1f6feb;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            margin-top: 15px;
+        }
+        
+        .position-size-label {
+            font-size: 0.8em;
+            color: #8b949e;
+            text-transform: uppercase;
+        }
+        
+        .position-size-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #58a6ff;
+            margin-top: 5px;
+        }
+        
+        .rr-badge {
+            display: inline-block;
+            background: #a371f7;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        
+        .profit-potential {
+            font-size: 0.85em;
+            color: #8b949e;
+            margin-top: 5px;
+        }
+        
+        .profit-amount { color: #3fb950; font-weight: bold; }
+        .loss-amount { color: #f85149; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 BTC Analyzer Pro</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>Criptomoneda</label>
+                <select id="symbol">
+                    <option value="BTCUSDT">Bitcoin (BTC)</option>
+                    <option value="ETHUSDT">Ethereum (ETH)</option>
+                    <option value="SOLUSDT">Solana (SOL)</option>
+                    <option value="BNBUSDT">BNB</option>
+                    <option value="ADAUSDT">Cardano (ADA)</option>
+                    <option value="XRPUSDT">Ripple (XRP)</option>
+                    <option value="DOGEUSDT">Dogecoin (DOGE)</option>
+                    <option value="AVAXUSDT">Avalanche (AVAX)</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label>Temporalidad</label>
+                <select id="interval">
+                    <option value="1m">1 minuto</option>
+                    <option value="5m">5 minutos</option>
+                    <option value="15m">15 minutos</option>
+                    <option value="30m">30 minutos</option>
+                    <option value="1h" selected>1 hora</option>
+                    <option value="4h">4 horas</option>
+                    <option value="1d">1 día</option>
+                    <option value="1w">1 semana</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label>Velas</label>
+                <select id="limit">
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="200" selected>200</option>
+                    <option value="500">500</option>
+                </select>
+            </div>
+            
+            <button id="analyzeBtn" onclick="loadData()">🔍 Analizar</button>
+            <button id="waitEntryBtn" onclick="waitForEntry()">🔔 Esperar Entrada</button>
+        </div>
+        
+        <div id="content">
+            <div class="loading">Selecciona parámetros y presiona "Analizar"</div>
+        </div>
+    </div>
+
+    <script>
+        async function loadData() {
+            const content = document.getElementById('content');
+            const btn = document.getElementById('analyzeBtn');
+            const symbol = document.getElementById('symbol').value;
+            const interval = document.getElementById('interval').value;
+            const limit = document.getElementById('limit').value;
+            
+            btn.disabled = true;
+            btn.textContent = '⏳ Analizando...';
+            content.innerHTML = '<div class="loading">Consultando datos de Binance...</div>';
+            
+            try {
+                const url = `/indicators/analysis/${symbol}?interval=${interval}&limit=${limit}`;
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data || typeof data !== 'object') {
+                    throw new Error('Datos inválidos recibidos');
+                }
+                
+                const currentPrice = data.current_price || 0;
+                const trend = data.trend || 'NEUTRAL';
+                const volatility = data.volatility_24h || 0;
+                const supportLevel = data.support_level || 0;
+                const resistanceLevel = data.resistance_level || 0;
+                const recommendation = data.recommendation || 'HOLD';
+                const timestamp = data.timestamp || new Date().toISOString();
+                const signals = data.signals || [];
+                const takeProfit = data.take_profit;
+                const stopLoss = data.stop_loss;
+                const rrRatio = data.risk_reward_ratio;
+                const positionSize = data.position_size_suggestion || '1-2%';
+                
+                let tpProfit = '';
+                let slLoss = '';
+                if (takeProfit && stopLoss) {
+                    const profit = Math.abs(takeProfit - currentPrice);
+                    const loss = Math.abs(currentPrice - stopLoss);
+                    const profitPct = (profit / currentPrice * 100).toFixed(2);
+                    const lossPct = (loss / currentPrice * 100).toFixed(2);
+                    tpProfit = `+${profitPct}%`;
+                    slLoss = `-${lossPct}%`;
+                }
+                
+                let signalsHtml = '';
+                if (Array.isArray(signals) && signals.length > 0) {
+                    signalsHtml = signals.map(signal => {
+                        const signalClass = signal.type === 'BUY' ? 'signal-buy' : 
+                                           signal.type === 'SELL' ? 'signal-sell' : 'signal-neutral';
+                        const icon = signal.type === 'BUY' ? '🟢' : 
+                                    signal.type === 'SELL' ? '🔴' : '🟡';
+                        const confidence = signal.confidence || 0;
+                        
+                        return `
+                            <div class="signal-card ${signalClass}">
+                                <div class="signal-icon">${icon}</div>
+                                <div class="signal-info">
+                                    <h3>${signal.indicator || 'Unknown'}</h3>
+                                    <p>${signal.description || ''} (${confidence}%)</p>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    signalsHtml = '<p style="color: #8b949e; text-align: center;">No hay señales disponibles</p>';
+                }
+                
+                const recClass = {
+                    'STRONG_BUY': 'rec-strong-buy',
+                    'BUY': 'rec-buy',
+                    'HOLD': 'rec-hold',
+                    'SELL': 'rec-sell',
+                    'STRONG_SELL': 'rec-strong-sell'
+                }[recommendation] || 'rec-hold';
+                
+                const recText = {
+                    'STRONG_BUY': '⭐ COMPRA FUERTE',
+                    'BUY': 'COMPRA',
+                    'HOLD': 'MANTENER',
+                    'SELL': 'VENTA',
+                    'STRONG_SELL': '⭐ VENTA FUERTE'
+                }[recommendation] || 'MANTENER';
+                
+                const trendColor = trend === 'BULLISH' ? 'buy' : trend === 'BEARISH' ? 'sell' : 'neutral';
+                const trendText = trend === 'BULLISH' ? 'ALCISTA 📈' : trend === 'BEARISH' ? 'BAJISTA 📉' : 'NEUTRAL ➡️';
+                
+                const symbolNames = {
+                    'BTCUSDT': 'Bitcoin',
+                    'ETHUSDT': 'Ethereum',
+                    'SOLUSDT': 'Solana',
+                    'BNBUSDT': 'BNB',
+                    'ADAUSDT': 'Cardano',
+                    'XRPUSDT': 'Ripple',
+                    'DOGEUSDT': 'Dogecoin',
+                    'AVAXUSDT': 'Avalanche'
+                };
+                
+                const intervalNames = {
+                    '1m': '1 minuto',
+                    '5m': '5 minutos',
+                    '15m': '15 minutos',
+                    '30m': '30 minutos',
+                    '1h': '1 hora',
+                    '4h': '4 horas',
+                    '1d': '1 día',
+                    '1w': '1 semana'
+                };
+                
+                let tpSlSection = '';
+                if (recommendation === 'BUY' || recommendation === 'STRONG_BUY') {
+                    tpSlSection = `
+                        <div style="background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                            <div style="text-align: center; margin-bottom: 20px;">
+                                <span style="color: #8b949e; font-size: 0.9em;">📈 OPERACIÓN LONG (COMPRA)</span>
+                            </div>
+                            <div class="tp-sl-grid">
+                                <div class="card" style="border: 2px solid #f0883e;">
+                                    <div class="card-header"><span class="card-title">🎯 Precio de Entrada</span></div>
+                                    <div class="card-value price">$${currentPrice.toLocaleString()}</div>
+                                    <div class="profit-potential">Comprar aquí</div>
+                                </div>
+                                <div class="card" style="border: 2px solid #3fb950;">
+                                    <div class="card-header"><span class="card-title">🎯 Take Profit</span></div>
+                                    <div class="card-value tp">$${takeProfit.toLocaleString(undefined, {maximumFractionDigits: 2})}</div>
+                                    <div class="profit-potential">Vender cuando suba a este precio</div>
+                                    <div class="profit-potential">Ganancia: <span class="profit-amount">${tpProfit}</span></div>
+                                </div>
+                                <div class="card" style="border: 2px solid #f85149;">
+                                    <div class="card-header"><span class="card-title">🛑 Stop Loss</span></div>
+                                    <div class="card-value sl">$${stopLoss.toLocaleString(undefined, {maximumFractionDigits: 2})}</div>
+                                    <div class="profit-potential">Cortar pérdida si baja a este precio</div>
+                                    <div class="profit-potential">Pérdida: <span class="loss-amount">${slLoss}</span></div>
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px;">
+                                <div style="text-align: center;">
+                                    <div style="color: #8b949e; font-size: 0.8em;">Ratio R/B</div>
+                                    <span class="rr-badge">1:${rrRatio}</span>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="color: #8b949e; font-size: 0.8em;">Posición sugerida</div>
+                                    <span style="color: #58a6ff; font-weight: bold;">${positionSize}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else if (recommendation === 'SELL' || recommendation === 'STRONG_SELL') {
+                    tpSlSection = `
+                        <div style="background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                            <div style="text-align: center; margin-bottom: 20px;">
+                                <span style="color: #8b949e; font-size: 0.9em;">📉 OPERACIÓN SHORT (VENTA)</span>
+                            </div>
+                            <div class="tp-sl-grid">
+                                <div class="card" style="border: 2px solid #f0883e;">
+                                    <div class="card-header"><span class="card-title">🎯 Precio de Entrada</span></div>
+                                    <div class="card-value price">$${currentPrice.toLocaleString()}</div>
+                                    <div class="profit-potential">Vender aquí (o vender spot)</div>
+                                </div>
+                                <div class="card" style="border: 2px solid #3fb950;">
+                                    <div class="card-header"><span class="card-title">🎯 Take Profit</span></div>
+                                    <div class="card-value tp">$${takeProfit.toLocaleString(undefined, {maximumFractionDigits: 2})}</div>
+                                    <div class="profit-potential">Recomprar cuando baje a este precio</div>
+                                    <div class="profit-potential">Ganancia: <span class="profit-amount">${tpProfit}</span></div>
+                                </div>
+                                <div class="card" style="border: 2px solid #f85149;">
+                                    <div class="card-header"><span class="card-title">🛑 Stop Loss</span></div>
+                                    <div class="card-value sl">$${stopLoss.toLocaleString(undefined, {maximumFractionDigits: 2})}</div>
+                                    <div class="profit-potential">Cortar pérdida si sube a este precio</div>
+                                    <div class="profit-potential">Pérdida: <span class="loss-amount">${slLoss}</span></div>
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px;">
+                                <div style="text-align: center;">
+                                    <div style="color: #8b949e; font-size: 0.8em;">Ratio R/B</div>
+                                    <span class="rr-badge">1:${rrRatio}</span>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="color: #8b949e; font-size: 0.8em;">Posición sugerida</div>
+                                    <span style="color: #58a6ff; font-weight: bold;">${positionSize}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    tpSlSection = `
+                        <div class="card" style="text-align: center; padding: 20px;">
+                            <div class="card-title">⏳ ESPERANDO CONFIRMACIÓN</div>
+                            <p style="margin-top: 10px; color: #8b949e;">
+                                No operar aún. Esperar que el precio llegue a:<br><br>
+                                <strong style="color: #3fb950;">Entrada LONG:</strong> $${supportLevel.toLocaleString()} (cerca del soporte)<br>
+                                <strong style="color: #f85149;">Entrada SHORT:</strong> $${resistanceLevel.toLocaleString()} (cerca de la resistencia)
+                            </p>
+                        </div>
+                    `;
+                }
+                
+                content.innerHTML = `
+                    <div class="timeframe-info">
+                        Analizando <strong>${symbolNames[symbol] || symbol}</strong> 
+                        en <span class="interval-badge">${intervalNames[interval] || interval}</span>
+                        • ${limit} velas • Precio: $${currentPrice.toLocaleString()}
+                    </div>
+                    <div class="grid">
+                        <div class="card">
+                            <div class="card-header"><span class="card-title">Precio Actual</span></div>
+                            <div class="card-value price">$${currentPrice.toLocaleString()}</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><span class="card-title">Tendencia</span></div>
+                            <div class="card-value ${trendColor}">${trendText}</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><span class="card-title">Volatilidad</span></div>
+                            <div class="card-value">${volatility.toFixed(2)}%</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><span class="card-title">Soporte / Resistencia</span></div>
+                            <div style="font-size: 0.85em; margin-top: 8px;">
+                                <div style="color: #3fb950;">S: $${supportLevel.toLocaleString()}</div>
+                                <div style="color: #f85149; margin-top: 3px;">R: $${resistanceLevel.toLocaleString()}</div>
+                            </div>
+                        </div>
+                    </div>
+                    ${tpSlSection}
+                    <div class="recommendation ${recClass}">${recText}</div>
+                    <div class="card">
+                        <div class="card-header"><span class="card-title">Señales Técnicas</span></div>
+                        ${signalsHtml}
+                    </div>
+                    <div class="timestamp">Actualizado: ${new Date(timestamp).toLocaleString()}</div>
+                `;
+                
+            } catch (error) {
+                content.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔍 Analizar';
+            }
+        }
+        
+        async function waitForEntry() {
+            const symbol = document.getElementById('symbol').value;
+            const btn = document.getElementById('waitEntryBtn');
+            
+            btn.disabled = true;
+            btn.textContent = '⏳ Esperando...';
+            
+            try {
+                const response = await fetch(`/indicators/analysis/${symbol}`);
+                const data = await response.json();
+                
+                if (data.recommendation === 'HOLD') {
+                    alert('No hay señal activa. Espera una señal de COMPRA o VENTA.');
+                    btn.disabled = false;
+                    btn.textContent = '🔔 Esperar Entrada';
+                    return;
+                }
+                
+                const type = data.recommendation.includes('BUY') ? 'LONG' : 'SHORT';
+                const entryPrice = data.entry_price || data.current_price;
+                const stopLoss = data.stop_loss;
+                const takeProfit = data.take_profit;
+                
+                alertSystem.createEntryAlert(symbol, entryPrice, type, stopLoss, takeProfit);
+                
+                const div = document.createElement('div');
+                div.style.cssText = `
+                    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                    background: #161b22; border: 2px solid #1f6feb; padding: 30px;
+                    border-radius: 12px; z-index: 10000; text-align: center;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+                `;
+                div.innerHTML = `
+                    <div style="font-size: 2em; margin-bottom: 15px;">🔔</div>
+                    <div style="font-size: 1.3em; color: #c9d1d9; margin-bottom: 10px;">
+                        Alerta activada para ${type}
+                    </div>
+                    <div style="font-size: 1.5em; color: #1f6feb; font-weight: bold; margin: 15px 0;">
+                        $${entryPrice.toLocaleString()}
+                    </div>
+                    <div style="color: #8b949e; font-size: 0.9em;">
+                        Te avisaremos cuando el precio llegue a la entrada<br>
+                        con sonido y notificación
+                    </div>
+                    <button onclick="this.parentElement.remove()" 
+                            style="margin-top: 20px; padding: 10px 30px; background: #1f6feb; 
+                                   border: none; color: white; border-radius: 6px; cursor: pointer;">
+                        Entendido
+                    </button>
+                `;
+                document.body.appendChild(div);
+                
+            } catch (error) {
+                alert('Error al crear alerta: ' + error.message);
+            }
+            
+            btn.disabled = false;
+            btn.textContent = '🔔 Esperar Entrada';
+        }
+        
+        window.onload = loadData;
+    </script>
+</body>
+</html>
