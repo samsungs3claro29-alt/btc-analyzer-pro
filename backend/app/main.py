@@ -7,44 +7,34 @@ import uvicorn
 
 app = FastAPI()
 
-# --- CONFIGURACIÓN DE CARPETAS ---
-# Basado en tu VS Code: backend/static
-STATIC_DIR = os.path.join("backend", "static")
+# --- CONFIGURACIÓN DE RUTAS ---
+# Como main.py está dentro de 'backend', la carpeta 'static' está en el mismo nivel
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 
 if os.path.exists(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-# --- RUTA PARA QUE LA WEB ABRA EN TU CELULAR ---
 @app.get("/", response_class=HTMLResponse)
 async def home():
-    return """
-    <html>
-        <head><title>BTC Analyzer Pro</title></head>
-        <body style="font-family: sans-serif; text-align: center; padding-top: 50px; background-color: #1a1a1a; color: white;">
-            <h1>🚀 BTC Analyzer Pro Online</h1>
-            <p>Servidor activo y funcionando.</p>
-            <a href="/static/dashboard.html" style="color: #00ff00; font-size: 20px; text-decoration: none; border: 1px solid #00ff00; padding: 10px; border-radius: 5px;">ABRIR DASHBOARD</a>
-        </body>
-    </html>
-    """
+    return "🚀 Servidor Activo. Ve a /static/dashboard.html en tu celular."
 
-# --- TUS NOTIFICACIONES DE TRADING ---
+# --- NOTIFICACIONES FILTRADAS ---
 @app.post("/trade/notification")
 async def notify(request: Request):
     data = await request.json()
     status = data.get("status")
     
-    # REEMPLAZA ESTOS DATOS CON LOS TUYOS
-    token = "TU_TOKEN_REAL"
-    chat_id = "TU_CHAT_ID_REAL"
+    # IMPORTANTE: Pon tus datos reales de Telegram aquí
+    token = "TU_TOKEN"
+    chat_id = "TU_CHAT_ID"
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     
     msg = ""
-    # Solo Aperturas (Entry y TP) [cite: 2026-02-08]
+    # 1. Apertura: Entry y TP [cite: 2026-02-08]
     if status == "open":
         msg = f"🚀 **OPERACION ABIERTA**\n📍 Entrada: {data.get('entry')}\n🎯 TP: {data.get('tp')}"
     
-    # Solo Cierres (Profit 💰)
+    # 2. Cierre: Profit 💰
     elif status == "closed":
         msg = f"💰 **OPERACION CERRADA**\n📈 Profit: {data.get('profit')}"
 
