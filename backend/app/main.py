@@ -8,8 +8,8 @@ import uvicorn
 app = FastAPI()
 
 # --- CONFIGURACIÓN DE TELEGRAM ---
-TOKEN = "TU_TOKEN_DE_TELEGRAM"
-CHAT_ID = "TU_CHAT_ID"
+TOKEN = "8675989356:AAEO8I-40mPFN67XBtInr_1itNwLpiWDMEA"
+CHAT_ID = "1658680938"
 TELEGRAM_URL = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
 # --- RUTA DE ARCHIVOS ---
