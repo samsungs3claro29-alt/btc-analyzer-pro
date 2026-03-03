@@ -8,33 +8,40 @@ import uvicorn
 app = FastAPI()
 
 # --- CONFIGURACIÓN DE RUTAS ---
-# Como main.py está dentro de 'backend', la carpeta 'static' está en el mismo nivel
-STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+# Como main.py está dentro de 'backend', buscamos 'static' en su misma carpeta
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
 
 if os.path.exists(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 @app.get("/", response_class=HTMLResponse)
 async def home():
-    return "🚀 Servidor Activo. Ve a /static/dashboard.html en tu celular."
+    return """
+    <body style="font-family:sans-serif; text-align:center; padding-top:50px; background:#121212; color:white;">
+        <h1>🚀 BTC Analyzer Pro Online</h1>
+        <p>Servidor vinculado correctamente.</p>
+        <a href="/static/dashboard.html" style="color:#00ff00;">ABRIR DASHBOARD EN CELULAR</a>
+    </body>
+    """
 
-# --- NOTIFICACIONES FILTRADAS ---
+# --- FILTROS DE NOTIFICACIÓN (Entry, TP y Profit) ---
 @app.post("/trade/notification")
 async def notify(request: Request):
     data = await request.json()
     status = data.get("status")
     
-    # IMPORTANTE: Pon tus datos reales de Telegram aquí
-    token = "TU_TOKEN"
-    chat_id = "TU_CHAT_ID"
+    # REEMPLAZA CON TUS DATOS DE TELEGRAM
+    token = "TU_TOKEN_REAL"
+    chat_id = "TU_CHAT_ID_REAL"
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     
     msg = ""
-    # 1. Apertura: Entry y TP [cite: 2026-02-08]
+    # Solo Apertura: Entry y TP [cite: 2026-03-03]
     if status == "open":
         msg = f"🚀 **OPERACION ABIERTA**\n📍 Entrada: {data.get('entry')}\n🎯 TP: {data.get('tp')}"
     
-    # 2. Cierre: Profit 💰
+    # Solo Cierre: Profit 💰
     elif status == "closed":
         msg = f"💰 **OPERACION CERRADA**\n📈 Profit: {data.get('profit')}"
 
@@ -44,5 +51,5 @@ async def notify(request: Request):
     return {"status": "ok"}
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
+    port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
