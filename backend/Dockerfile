@@ -1,14 +1,15 @@
+# Usamos una imagen de Python ligera
 FROM python:3.11-slim
 
-# Establecer el directorio de trabajo
+# Directorio de trabajo dentro del servidor
 WORKDIR /app
 
-# Copiar requerimientos e instalar
+# Copiamos requerimientos e instalamos
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# COPIAR TODO el contenido de la carpeta backend al contenedor
+# COPIAMOS TODO el contenido de tu carpeta backend al servidor
 COPY . .
 
-# Comando de inicio corregido para usar main.py en la raíz del contenedor
+# Comando de inicio corregido (apunta a main.py en la raíz)
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "10000"]
