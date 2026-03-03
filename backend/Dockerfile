@@ -1,17 +1,17 @@
+# Usar una imagen ligera de Python
 FROM python:3.11-slim
 
+# Establecer el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# Cambia las líneas de COPY para que usen la ruta correcta
+# Copiar solo el archivo de requerimientos primero para aprovechar la caché
 COPY requirements.txt .
+
+# Instalar las librerías necesarias
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia todo el contenido de la carpeta actual (backend) al contenedor
+# COPIAR TODO EL CONTENIDO de la carpeta backend al contenedor
 COPY . .
 
-# Comando de inicio corregido
+# Comando para iniciar la aplicación (usando main:app directamente)
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "10000"]
